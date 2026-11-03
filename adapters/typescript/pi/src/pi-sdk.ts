@@ -257,9 +257,19 @@ export function selectPiMcpServers(
   configuredEnvironment: Record<string, string>,
   parentEnvironment: NodeJS.ProcessEnv,
 ): Record<string, McpServerConfig> {
-  if (config.mcp?.extensions !== undefined) {
-    throw new LifecycleError("pi_mcp_extensions_unsupported", "Pi does not support Fabric MCP extensions");
-  }
+if (config.mcp?.extensions !== undefined) {
+    const extensions = config.mcp.extensions;
+    if (Array.isArray(extensions)) {
+        for (const ext of extensions) {
+            if (ext.tool) {
+                server.toolDefinitions = [
+                    ...(server.toolDefinitions || []),
+                    ext.tool,
+                ];
+            }
+        }
+    }
+}
   const selected = Object.create(null) as Record<string, McpServerConfig>;
   for (const [name, server] of Object.entries(config.mcp?.servers ?? {})) {
     if (!MCP_SERVER_NAME.test(name) || server.extensions !== undefined) {
