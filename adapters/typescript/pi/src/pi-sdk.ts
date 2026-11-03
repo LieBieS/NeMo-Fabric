@@ -262,9 +262,16 @@ if (config.mcp?.extensions !== undefined) {
     if (Array.isArray(extensions)) {
         for (const ext of extensions) {
             if (ext.tool) {
+                const toolName = ext.tool.name;
+                if (typeof toolName !== "string" || toolName.length === 0 || toolName.length > 128 || /[^a-zA-Z0-9_]/.test(toolName)) {
+                    throw new LifecycleError("pi_mcp_tool_name_invalid", "tool name must be alphanumeric/underscore, 1-128 chars");
+                }
+                if (ext.tool.inputSchema && typeof ext.tool.inputSchema !== "object") {
+                    throw new LifecycleError("pi_mcp_tool_schema_invalid", "tool inputSchema must be an object");
+                }
                 server.toolDefinitions = [
                     ...(server.toolDefinitions || []),
-                    ext.tool,
+                    { ...ext.tool, name: toolName },
                 ];
             }
         }
