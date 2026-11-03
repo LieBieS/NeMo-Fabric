@@ -257,19 +257,26 @@ export function selectPiMcpServers(
   configuredEnvironment: Record<string, string>,
   parentEnvironment: NodeJS.ProcessEnv,
 ): Record<string, McpServerConfig> {
-if (config.mcp?.extensions !== undefined) {
+  if (config.mcp?.extensions !== undefined) {
     const extensions = config.mcp.extensions;
-    if (Array.isArray(extensions)) {
-        for (const ext of extensions) {
-            if (ext.tool) {
-                server.toolDefinitions = [
-                    ...(server.toolDefinitions || []),
-                    ext.tool,
-                ];
-            }
-        }
+    if (!Array.isArray(extensions)) {
+      throw new LifecycleError("pi_mcp_extensions_invalid", "extensions must be an array");
     }
-}
+    for (const ext of extensions) {
+      if (typeof ext !== "object" || ext === null) {
+        throw new LifecycleError("pi_mcp_extensions_invalid", "each extension must be an object");
+      }
+      if (ext.tool) {
+        if (typeof ext.tool.name !== "string" || ext.tool.name.length === 0 || ext.tool.name.length > 128) {
+          throw new LifecycleError("pi_mcp_tool_name_invalid", "tool name must be a non-empty string <= 128 chars");
+        }
+        server.toolDefinitions = [
+          ...(server.toolDefinitions || []),
+          ext.tool,
+        ];
+      }
+    }
+  }
   const selected = Object.create(null) as Record<string, McpServerConfig>;
   for (const [name, server] of Object.entries(config.mcp?.servers ?? {})) {
     if (!MCP_SERVER_NAME.test(name) || server.extensions !== undefined) {
